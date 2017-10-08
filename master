@@ -13,7 +13,7 @@
 
 # The address of the interface to bind to:
 #interface: 0.0.0.0
-interface: 192.168.0.50
+interface: 192.168.1.50
 # Whether the master should listen for IPv6 connections. If this is set to True,
 # the interface option must be adjusted, too. (For example: "interface: '::'")
 #ipv6: False
@@ -91,6 +91,10 @@ interface: 192.168.0.50
 # Set the default outputter used by the salt command. The default is "nested".
 #output: nested
 
+# To set a list of additional directories to search for salt outputters, set the
+# outputter_dirs option.
+#outputter_dirs: []
+
 # Set the default output file used by the salt command. Default is to output
 # to the CLI and not to a file. Functions the same way as the "--out-file"
 # CLI option, only sets this to a single file for all salt commands.
@@ -98,6 +102,9 @@ interface: 192.168.0.50
 
 # Return minions that timeout when running commands like test.ping
 #show_timeout: True
+
+# Tell the client to display the jid when a job is published.
+#show_jid: False
 
 # By default, output is colored. To disable colored output, set the color value
 # to False.
@@ -193,6 +200,9 @@ interface: 192.168.0.50
 # WARNING: This may have security implications if compromised minions auth with
 # a previous deleted minion ID.
 #preserve_minion_cache: False
+
+# Allow or deny minions from requesting their own key revocation
+#allow_minion_key_revoke: True
 
 # If max_minions is used in large installations, the master might experience
 # high-load situations because of having to check the number of connected
@@ -342,10 +352,6 @@ interface: 192.168.0.50
 #    - '^(?!sudo_).*$'   #  all non sudo users
 #  modules:
 #    - cmd
-#
-# WARNING: client_acl and client_acl_blacklist options are deprecated and will
-# be removed in the future releases. Use publisher_acl and
-# publisher_acl_blacklist instead.
 
 # Enforce publisher_acl & publisher_acl_blacklist when users have sudo
 # access to the salt command.
@@ -374,6 +380,15 @@ interface: 192.168.0.50
 #
 #token_expire_user_override: False
 
+# Set to True to enable keeping the calculated user's auth list in the token
+# file. This is disabled by default and the auth list is calculated or requested
+# from the eauth driver each time.
+#keep_acl_in_token: False
+
+# Auth subsystem module to use to get authorized access list for a user. By default it's
+# the same module used for external authentication.
+#eauth_acl_module: django
+
 # Allow minions to push files to the master. This is disabled by default, for
 # security purposes.
 #file_recv: False
@@ -396,6 +411,20 @@ interface: 192.168.0.50
 # will be logged. This behavior went away in Salt 2014.1.0 and these two situations
 # will cause minion to throw an exception and drop the message.
 # sign_pub_messages: False
+
+# Signature verification on messages published from minions
+# This requires that minions cryptographically sign the messages they
+# publish to the master.  If minions are not signing, then log this information
+# at loglevel 'INFO' and drop the message without acting on it.
+# require_minion_sign_messages: False
+
+# The below will drop messages when their signatures do not validate.
+# Note that when this option is False but `require_minion_sign_messages` is True
+# minions MUST sign their messages but the validity of their signatures
+# is ignored.
+# These two config options exist so a Salt infrastructure can be moved
+# to signing minion messages gradually.
+# drop_messages_signature_fail: False
 
 # Use TLS/SSL encrypted connection between master and minion.
 # Can be set to a dictionary containing keyword arguments corresponding to Python's
@@ -423,6 +452,27 @@ interface: 192.168.0.50
 # - /etc/salt/roster.d
 # - /opt/salt/some/more/rosters
 
+# The ssh password to log in with.
+#ssh_passwd: ''
+
+#The target system's ssh port number.
+#ssh_port: 22
+
+# Comma-separated list of ports to scan.
+#ssh_scan_ports: 22
+
+# Scanning socket timeout for salt-ssh.
+#ssh_scan_timeout: 0.01
+
+# Boolean to run command via sudo.
+#ssh_sudo: False
+
+# Number of seconds to wait for a response when establishing an SSH connection.
+#ssh_timeout: 60
+
+# The user to log in as.
+#ssh_user: root
+
 # The log file of the salt-ssh command:
 #ssh_log_file: /var/log/salt/ssh
 
@@ -435,6 +485,18 @@ interface: 192.168.0.50
 # Set this to True to default to using ~/.ssh/id_rsa for salt-ssh
 # authentication with minions
 #ssh_use_home_key: False
+
+# Set this to True to default salt-ssh to run with ``-o IdentitiesOnly=yes``.
+# This option is intended for situations where the ssh-agent offers many
+# different identities and allows ssh to ignore those identities and use the
+# only one specified in options.
+#ssh_identities_only: False
+
+# List-only nodegroups for salt-ssh. Each group must be formed as either a
+# comma-separated list, or a YAML list. This option is useful to group minions
+# into easy-to-target groups when using salt-ssh. These groups can then be
+# targeted with the normal -N argument to salt-ssh.
+#ssh_list_nodegroups: {}
 
 #####    Master Module Management    #####
 ##########################################
@@ -504,6 +566,11 @@ interface: 192.168.0.50
 # If set to 'changes', the output will be full unless the state didn't change.
 #state_output: full
 
+# The state_output_diff setting changes whether or not the output from
+# successful states is returned. Useful when even the terse output of these
+# states is cluttering the logs. Set it to True to ignore them.
+#state_output_diff: False
+
 # Automatically aggregate all states that have support for mod_aggregate by
 # setting to 'True'. Or pass a list of state module names to automatically
 # aggregate just those types.
@@ -529,9 +596,9 @@ interface: 192.168.0.50
 # roots cannot match, otherwise the downloaded files will not be able to be
 # reliably ensured. A base environment is required to house the top file.
 # Example:
-# file_roots:
-#   base:
-#     - /srv/salt/
+file_roots:
+  base:
+    - /srv/salt/
 #   dev:
 #     - /srv/salt/dev/services
 #     - /srv/salt/dev/states
@@ -539,11 +606,14 @@ interface: 192.168.0.50
 #     - /srv/salt/prod/services
 #     - /srv/salt/prod/states
 #
-file_roots:
-  base:
-    - /srv/salt
-    - /srv/formulas
+#file_roots:
+#  base:
+#    - /srv/salt
 #
+
+# The master_roots setting configures a master-only copy of the file_roots dictionary,
+# used by the state compiler.
+#master_roots: /srv/salt-master
 
 # When using multiple environments, each with their own top file, the
 # default behaviour is an unordered merge. To prevent top files from
@@ -562,11 +632,11 @@ file_roots:
 #default_top: base
 
 # The hash_type is the hash to use when discovering the hash of a file on
-# the master server. The default is md5 but sha1, sha224, sha256, sha384
-# and sha512 are also supported.
+# the master server. The default is sha256, but md5, sha1, sha224, sha384 and
+# sha512 are also supported.
 #
-# WARNING: While md5 is also supported, do not use it due to the high chance
-# of possible collisions and thus security breach.
+# WARNING: While md5 and sha1 are also supported, do not use them due to the
+# high chance of possible collisions and thus security breach.
 #
 # Prior to changing this value, the master should be stopped and all Salt
 # caches should be cleared.
@@ -636,10 +706,11 @@ file_roots:
 
 # Git File Server Backend Configuration
 #
-# Optional parameter used to specify the provider to be used for gitfs. Must
-# be one of the following: pygit2, gitpython, or dulwich. If unset, then each
-# will be tried in that same order, and the first one with a compatible
-# version installed will be the provider that is used.
+# Optional parameter used to specify the provider to be used for gitfs. Must be
+# either pygit2 or gitpython. If unset, then both will be tried (in that
+# order), and the first one with a compatible version installed will be the
+# provider that is used.
+#
 #gitfs_provider: pygit2
 
 # Along with gitfs_password, is used to authenticate to HTTPS remotes.
@@ -692,6 +763,11 @@ file_roots:
 # repository and defaults to the repository root.
 #gitfs_root: somefolder/otherfolder
 #
+# The refspecs fetched by gitfs remotes
+#gitfs_refspecs:
+#  - '+refs/heads/*:refs/remotes/origin/*'
+#  - '+refs/tags/*:refs/tags/*'
+#
 #
 #####         Pillar settings        #####
 ##########################################
@@ -700,13 +776,35 @@ file_roots:
 # Pillar is laid out in the same fashion as the file server, with environments,
 # a top file and sls files. However, pillar data does not need to be in the
 # highstate format, and is generally just key/value pairs.
-pillar_roots:
-  base:
-    - /srv/pillar
+#pillar_roots:
+#  base:
+#    - /srv/pillar
 #
 #ext_pillar:
 #  - hiera: /etc/hiera.yaml
 #  - cmd_yaml: cat /etc/salt/yaml
+
+
+# A list of paths to be recursively decrypted during pillar compilation.
+# Entries in this list can be formatted either as a simple string, or as a
+# key/value pair, with the key being the pillar location, and the value being
+# the renderer to use for pillar decryption. If the former is used, the
+# renderer specified by decrypt_pillar_default will be used.
+#decrypt_pillar:
+#  - 'foo:bar': gpg
+#  - 'lorem:ipsum:dolor'
+
+# The delimiter used to distinguish nested data structures in the
+# decrypt_pillar option.
+#decrypt_pillar_delimiter: ':'
+
+# The default renderer used for decryption, if one is not specified for a given
+# pillar key in decrypt_pillar.
+#decrypt_pillar_default: gpg
+
+# List of renderers which are permitted to be used for pillar decryption.
+#decrypt_pillar_renderers:
+#  - gpg
 
 # The ext_pillar_first option allows for external pillar sources to populate
 # before file system pillar. This allows for targeting file system pillar from
@@ -748,6 +846,11 @@ pillar_roots:
 
 # Recursively merge lists by aggregating them instead of replacing them.
 #pillar_merge_lists: False
+
+# Set this option to True to force the pillarenv to be the same as the effective
+# saltenv when running states. If pillarenv is specified this option will be
+# ignored.
+#pillarenv_from_saltenv: False
 
 # Set this option to 'True' to force a 'KeyError' to be raised whenever an
 # attempt to retrieve a named value from pillar fails. When this option is set
@@ -813,6 +916,11 @@ pillar_roots:
 # This parameter is optional, required only when the SSH key being used
 # to authenticate is protected by a passphrase.
 #git_pillar_passphrase: ''
+
+# The refspecs fetched by git_pillar remotes
+#git_pillar_refspecs:
+#  - '+refs/heads/*:refs/remotes/origin/*'
+#  - '+refs/tags/*:refs/tags/*'
 
 # A master can cache pillars locally to bypass the expense of having to render them
 # for each minion on every request. This feature should only be enabled in cases
@@ -1059,6 +1167,11 @@ pillar_roots:
 #winrepo_remotes:
 #  - 'https://github.com/saltstack/salt-winrepo.git'
 
+# The refspecs fetched by winrepo remotes
+#winrepo_refspecs:
+#  - '+refs/heads/*:refs/remotes/origin/*'
+#  - '+refs/tags/*:refs/tags/*'
+#
 
 #####      Returner settings          ######
 ############################################
@@ -1074,8 +1187,43 @@ pillar_roots:
 # Save runner returns to the job cache
 #runner_returns: True
 
-# Permanently include any available Python 3rd party modules into Salt Thin
+# Permanently include any available Python 3rd party modules into thin and minimal Salt
 # when they are generated for Salt-SSH or other purposes.
 # The modules should be named by the names they are actually imported inside the Python.
 # The value of the parameters can be either one module or a comma separated list of them.
 #thin_extra_mods: foo,bar
+#min_extra_mods: foo,bar,baz
+
+
+######      Keepalive settings        ######
+############################################
+# Warning: Failure to set TCP keepalives on the salt-master can result in
+# not detecting the loss of a minion when the connection is lost or when
+# it's host has been terminated without first closing the socket.
+# Salt's Presence System depends on this connection status to know if a minion
+# is "present".
+# ZeroMQ now includes support for configuring SO_KEEPALIVE if supported by
+# the OS. If connections between the minion and the master pass through
+# a state tracking device such as a firewall or VPN gateway, there is
+# the risk that it could tear down the connection the master and minion
+# without informing either party that their connection has been taken away.
+# Enabling TCP Keepalives prevents this from happening.
+
+# Overall state of TCP Keepalives, enable (1 or True), disable (0 or False)
+# or leave to the OS defaults (-1), on Linux, typically disabled. Default True, enabled.
+#tcp_keepalive: True
+
+# How long before the first keepalive should be sent in seconds. Default 300
+# to send the first keepalive after 5 minutes, OS default (-1) is typically 7200 seconds
+# on Linux see /proc/sys/net/ipv4/tcp_keepalive_time.
+#tcp_keepalive_idle: 300
+
+# How many lost probes are needed to consider the connection lost. Default -1
+# to use OS defaults, typically 9 on Linux, see /proc/sys/net/ipv4/tcp_keepalive_probes.
+#tcp_keepalive_cnt: -1
+
+# How often, in seconds, to send keepalives after the first one. Default -1 to
+# use OS defaults, typically 75 seconds on Linux, see
+# /proc/sys/net/ipv4/tcp_keepalive_intvl.
+#tcp_keepalive_intvl: -1
+
